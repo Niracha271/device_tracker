@@ -35,30 +35,16 @@ class StatusIcon(Enum):
 # ============================================
 @st.cache_resource
 def get_google_sheets_client():
-    """Initialize and cache Google Sheets client"""
     try:
-        # วิธีที่ 1: ใช้ Streamlit Secrets (สำหรับ deployment)
-        if 'gsheet_creds' in st.secrets:
-            credentials_dict = st.secrets["gsheet_creds"]
-            credentials = Credentials.from_service_account_info(credentials_dict)
-
-        # วิธีที่ 2: ใช้ JSON file (สำหรับ local development)
-        else:
-            try:
-                credentials = Credentials.from_service_account_file("credentials.json")
-            except FileNotFoundError:
-                st.error("""
-                ❌ ไม่พบ Google Sheets credentials
-                """)
-                return None
-
+        credentials = Credentials.from_service_account_info(
+            st.secrets["gsheet_creds"],  # ← ใช้จาก Secrets
+            scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        )
         client = gspread.authorize(credentials)
         return client
-
     except Exception as e:
-        st.error(f"❌ Google Sheets authentication failed: {str(e)}")
+        st.error(f"Failed to load Google Sheets credentials: {e}")
         return None
-
 
 def get_worksheet():
     """Get the worksheet object"""
@@ -763,4 +749,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
