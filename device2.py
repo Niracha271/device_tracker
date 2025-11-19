@@ -42,16 +42,6 @@ def get_google_sheets_client():
             credentials_dict = st.secrets["gsheet_creds"]
             credentials = Credentials.from_service_account_info(credentials_dict)
 
-        # วิธีที่ 2: ใช้ JSON file (สำหรับ local development)
-        else:
-            try:
-                credentials = Credentials.from_service_account_file("credentials.json")
-            except FileNotFoundError:
-                st.error("""
-                ❌ ไม่พบ Google Sheets credentials
-                """)
-                return None
-
         client = gspread.authorize(credentials)
         return client
 
@@ -766,4 +756,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
