@@ -305,59 +305,22 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
 # MENU: BARCODE SCANNER (Fixed Version)
 # ============================================
 def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
-    """Barcode Scanner Mode with auto-focus"""
-
-    # CSS สำหรับลดช่องว่างและ auto-focus
-    st.markdown("""
-    <style>
-    .main .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-    .stTextInput {
-        margin-bottom: 0.5rem;
-    }
-    div[data-testid="stFormSubmitButton"] button {
-        display: none;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Header
+    st.set_page_config(page_title="Medical Device Tracker", layout="wide")
     col1, col2 = st.columns([3, 1])
     with col1:
+        # ใช้ markdown แบบ inline ไม่ใช้ st.info
         st.info("**🔴 LIVE SCANNER MODE** - Auto-save on scan")
     with col2:
-        st.session_state.username = st.text_input(
-            "User",
-            value=st.session_state.username,
-            label_visibility="collapsed",
-            key="scanner_user"
-        )
+        st.text_input("User", value=st.session_state.username, label_visibility="collapsed", key="user_field")
 
     st.divider()
-
-    # Default Status
     default_status = st.selectbox(
         "Default Status for New Devices",
         [s.value for s in DeviceStatus],
-        index=0
+        index=0, label_visibility="collapsed"
     )
 
-    # Auto-focus JavaScript
-    st.components.v1.html("""
-    <script>
-        setTimeout(() => {
-            const input = document.querySelector('input[placeholder*="Tap scanner here"]');
-            if (input) {
-                input.focus();
-                input.select();
-            }
-        }, 500);
-    </script>
-    """, height=0)
-
-    # Scanner Form
+    # ใช้ form สำหรับการสแกน
     with st.form("scanner_form", clear_on_submit=True):
         st.markdown("**Scan barcode or paste data:**")
         barcode_input = st.text_input(
@@ -367,14 +330,25 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
             label_visibility="collapsed"
         )
 
+        # ปุ่ม submit ที่ซ่อนด้วย CSS
+        st.markdown("""
+            <style>
+            div[data-testid="stFormSubmitButton"] button {
+                display: none;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
         submitted = st.form_submit_button("Submit")
 
         if submitted and barcode_input:
             st.session_state.scan_count += 1
+
             success, message, df = process_barcode_scan(barcode_input, df, default_status)
 
             if success:
                 st.success(message)
+                # รอ 2 วินาทีแล้ว auto-focus ใหม่
                 time.sleep(2)
                 st.rerun()
             else:
@@ -383,7 +357,6 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
                 st.rerun()
 
     st.divider()
-
     # Statistics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -394,7 +367,6 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
         st.metric("✅ Ready", (df["Status"] == DeviceStatus.READY.value).sum())
     with col4:
         st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
-
     # Recent scanned devices
     st.subheader("📜 Recently Scanned")
     if not df.empty:
@@ -406,6 +378,19 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
             st.info("📭 No scans yet")
     else:
         st.info("📭 No devices")
+
+        # 3. Auto-focus
+        st.components.v1.html("""
+            <script>
+                setTimeout(() => {
+                    const input = document.querySelector('input[placeholder*="Tap scanner here"]');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                }, 800);
+            </script>
+            """, height=0)
 
     return df
 
@@ -749,5 +734,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
