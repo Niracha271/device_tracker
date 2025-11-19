@@ -68,24 +68,20 @@ def get_worksheet():
             return None
 
         spreadsheet = client.open_by_key(SHEET_ID)
-        worksheet = spreadsheet.worksheet(SHEET_NAME)
-        return worksheet
 
-    except gspread.exceptions.WorksheetNotFound:
-        # ถ้า worksheet ยังไม่มี, สร้างใหม่
         try:
-            spreadsheet = client.open_by_key(SHEET_ID)
+            worksheet = spreadsheet.worksheet(SHEET_NAME)
+            return worksheet
+        
+        except gspread.exceptions.WorksheetNotFound:
+            # ถ้า worksheet ยังไม่มี ให้สร้างใหม่
             worksheet = spreadsheet.add_worksheet(title=SHEET_NAME, rows=1000, cols=20)
-            # เพิ่ม header
             worksheet.append_row(REQUIRED_COLUMNS)
             return worksheet
-        except Exception as e:
-            st.error(f"❌ Failed to create worksheet: {str(e)}")
-            return None
+
     except Exception as e:
         st.error(f"❌ Failed to access Google Sheet: {str(e)}")
         return None
-
 
 # ============================================
 # SESSION STATE INITIALIZATION
@@ -767,3 +763,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
