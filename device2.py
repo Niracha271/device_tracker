@@ -12,17 +12,14 @@ from zoneinfo import ZoneInfo
 # ============================================
 # CONFIGURATION & CONSTANTS
 # ============================================
-
-SHEET_ID = "1EMuK_cXYR2kk_Gb_i7MIOpnmfhC4Q2c9Uh5dUqpz7cc"  # เปลี่ยนเป็น Sheet ID ของคุณ
-SHEET_NAME = "devicestatus"  # ชื่อ worksheet
+SHEET_ID = "1EMuK_cXYR2kk_Gb_i7MIOpnmfhC4Q2c9Uh5dUqpz7cc"  
+SHEET_NAME = "devicestatus"
 REQUIRED_COLUMNS = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
-
 
 class DeviceStatus(Enum):
     READY = "Ready"
     RETURN = "Return"
     DESTROY = "Destroy"
-
 
 class StatusIcon(Enum):
     READY = "🟢"
@@ -83,9 +80,7 @@ def init_session_state():
     if 'username' not in st.session_state:
         st.session_state.username = "Scanner"
 
-
 init_session_state()
-
 
 # ============================================
 # DATA MANAGEMENT (Google Sheets)
@@ -98,18 +93,14 @@ def load_data():
         return pd.DataFrame(columns=REQUIRED_COLUMNS)
 
     try:
-        # ดึงข้อมูลทั้งหมด
         data = worksheet.get_all_records()
 
         if not data:
-            # ถ้าไม่มีข้อมูล, สร้าง header
             worksheet.append_row(REQUIRED_COLUMNS)
             return pd.DataFrame(columns=REQUIRED_COLUMNS)
 
-        # แปลงเป็น DataFrame
         df = pd.DataFrame(data)
 
-        # ตรวจสอบและแก้ไขข้อมูล
         for col in REQUIRED_COLUMNS:
             if col not in df.columns:
                 df[col] = ""
@@ -128,24 +119,16 @@ def save_data(df: pd.DataFrame) -> bool:
         return False
 
     try:
-        # ล้าง sheet เก่า
         worksheet.clear()
-
-        # เพิ่ม header
         worksheet.append_row(REQUIRED_COLUMNS)
-
-        # เพิ่มข้อมูล
         if not df.empty:
-            # แปลง DataFrame เป็น list of lists
             data = df[REQUIRED_COLUMNS].values.tolist()
 
-            # เพิ่มทีละ batch (Google Sheets limit)
             batch_size = 100
             for i in range(0, len(data), batch_size):
                 batch = data[i:i + batch_size]
                 worksheet.append_rows(batch, value_input_option='RAW')
 
-        # ล้าง cache
         st.cache_data.clear()
         st.session_state.data_refresh += 1
 
@@ -154,7 +137,6 @@ def save_data(df: pd.DataFrame) -> bool:
     except Exception as e:
         st.error(f"❌ Error saving data to sheets: {str(e)}")
         return False
-
 
 # ============================================
 # UTILITY FUNCTIONS
@@ -228,10 +210,6 @@ def display_device_info(device: pd.Series):
 # BARCODE SCANNER FUNCTIONS
 # ============================================
 def cycle_status(current_status: str) -> str:
-    """
-    Cycle through statuses: Ready -> Return -> Ready -> Return...
-    When status is "Destroy", it stays "Destroy" (device will be deleted)
-    """
     if current_status == DeviceStatus.READY.value:
         return DeviceStatus.RETURN.value
     elif current_status == DeviceStatus.RETURN.value:
@@ -242,11 +220,6 @@ def cycle_status(current_status: str) -> str:
 
 def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: str = "Ready") -> Tuple[
     bool, str, pd.DataFrame]:
-    """
-    Process barcode scan data - auto-save to database
-    Cycle status: Ready -> Return -> Ready -> Return... until Destroy (then deleted)
-    Returns: (success, message, updated_df)
-    """
     barcode_data = barcode_data.strip()
 
     if not barcode_data:
@@ -254,15 +227,13 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
 
     timestamp = datetime.now(ZoneInfo("Asia/Bangkok")).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Check if device already exists
     result = find_device_by_serial(df, barcode_data)
 
     if result is not None:
-        # Device exists - cycle its status
+        
         device, idx = result
         current_status = device['Status']
-
-        # Check if status is "Destroy" - delete the device
+        
         if current_status == DeviceStatus.DESTROY.value:
             df = df.drop(idx)
             if save_data(df):
@@ -271,7 +242,6 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
             else:
                 return False, "❌ Failed to delete device", df
 
-        # Cycle to next status
         new_status = cycle_status(current_status)
         df.at[idx, "Status"] = new_status
         df.at[idx, "Last Scanned/Added"] = timestamp
@@ -284,7 +254,6 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
         else:
             return False, "❌ Failed to update scan info", df
     else:
-        # New device - add it with "Ready" status and fixed name "Legacy pro"
         new_row = pd.DataFrame({
             "Serial Number": [barcode_data],
             "Device Name": ["Legacy pro"],
@@ -302,13 +271,12 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
 
 
 # ============================================
-# MENU: BARCODE SCANNER (Fixed Version)
+# MENU: BARCODE SCANNER
 # ============================================
 def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
     st.set_page_config(page_title="Medical Device Tracker", layout="wide")
     col1, col2 = st.columns([3, 1])
     with col1:
-        # ใช้ markdown แบบ inline ไม่ใช้ st.info
         st.info("**🔴 LIVE SCANNER MODE** - Auto-save on scan")
     with col2:
         st.text_input("User", value=st.session_state.username, label_visibility="collapsed", key="user_field")
@@ -319,8 +287,7 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
         [s.value for s in DeviceStatus],
         index=0, label_visibility="collapsed"
     )
-
-    # ใช้ form สำหรับการสแกน
+    
     with st.form("scanner_form", clear_on_submit=True):
         st.markdown("**Scan barcode or paste data:**")
         barcode_input = st.text_input(
@@ -330,7 +297,6 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
             label_visibility="collapsed"
         )
 
-        # ปุ่ม submit ที่ซ่อนด้วย CSS
         st.markdown("""
             <style>
             div[data-testid="stFormSubmitButton"] button {
@@ -348,7 +314,6 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
 
             if success:
                 st.success(message)
-                # รอ 2 วินาทีแล้ว auto-focus ใหม่
                 time.sleep(2)
                 st.rerun()
             else:
@@ -367,7 +332,7 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
         st.metric("✅ Ready", (df["Status"] == DeviceStatus.READY.value).sum())
     with col4:
         st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
-    # Recent scanned devices
+        
     st.subheader("📜 Recently Scanned")
     if not df.empty:
         recent = df.dropna(subset=["Last Scanned/Added"]).sort_values("Last Scanned/Added", ascending=False).head(20)
@@ -379,7 +344,6 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
     else:
         st.info("📭 No devices")
 
-        # 3. Auto-focus
         st.components.v1.html("""
             <script>
                 setTimeout(() => {
@@ -399,7 +363,7 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
 # MENU: VIEW ALL DEVICES
 # ============================================
 def menu_view_all(df: pd.DataFrame):
-    """Display all devices"""
+    
     st.subheader("📋 All Devices")
 
     if df.empty:
@@ -424,7 +388,7 @@ def menu_view_all(df: pd.DataFrame):
 # MENU: SEARCH DEVICE
 # ============================================
 def menu_search(df: pd.DataFrame):
-    """Search for device by serial number"""
+    
     st.subheader("🔍 Search Device")
 
     search_serial = st.text_input("Enter Serial Number", placeholder="Search...")
@@ -450,7 +414,6 @@ def menu_search(df: pd.DataFrame):
         st.success(f"✅ Found: {search_serial}")
         display_device_info(device)
 
-        # Display additional info
         st.write("---")
         col1, col2 = st.columns(2)
         with col1:
@@ -464,7 +427,7 @@ def menu_search(df: pd.DataFrame):
 # MENU: ADD DEVICE MANUALLY
 # ============================================
 def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
-    """Add new device manually"""
+    
     st.subheader("➕ Add New Device")
 
     with st.form("add_device_form"):
@@ -514,7 +477,7 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
 # MENU: EDIT DEVICE
 # ============================================
 def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
-    """Edit device information"""
+    
     st.subheader("✏️ Edit Device")
 
     if df.empty:
@@ -599,7 +562,6 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
 # MENU: UPDATE STATUS
 # ============================================
 def menu_update_status(df: pd.DataFrame) -> pd.DataFrame:
-    """Update device status"""
     st.subheader("🔄 Update Device Status")
 
     if df.empty:
@@ -664,7 +626,6 @@ def menu_update_status(df: pd.DataFrame) -> pd.DataFrame:
 # SIDEBAR STATISTICS
 # ============================================
 def display_sidebar_stats(df: pd.DataFrame):
-    """Display statistics in sidebar"""
     st.sidebar.markdown("---")
     st.sidebar.markdown("📊 **System Information**")
 
@@ -684,7 +645,6 @@ def display_sidebar_stats(df: pd.DataFrame):
 # MAIN APPLICATION
 # ============================================
 def main():
-    """Main application entry point"""
     st.set_page_config(
         page_title="APD Device Tracker",
         layout="wide",
@@ -694,7 +654,6 @@ def main():
     st.title("🧰 APD Device Tracker")
     st.subheader("Google Sheets Backend - Automatic Device Tracking")
 
-    # Check Google Sheets connection
     if not get_worksheet():
         st.error("""
         ⚠️ **Google Sheets not configured**
@@ -710,7 +669,6 @@ def main():
     df = load_data()
 
     menu = st.sidebar.radio(
-        "Menu",
         ["📱 Scanner Mode", "View All", "Search", "Add Device", "Edit Device", "Update Status"]
     )
 
@@ -732,6 +690,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
