@@ -547,11 +547,9 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
     with st.form("edit_device_form"):
         new_serial = st.text_input("New Serial Number *", value=device['Serial Number'])
         new_name = st.text_input("New Device Name *", value=device['Device Name'])
-        new_status = st.selectbox(
-            "New Status",
-            [s.value for s in DeviceStatus],
-            index=list(DeviceStatus).index([s for s in DeviceStatus if s.value == device['Status']][0])
-        )
+       
+        current_status = device["Status"]
+        st.write(f"**Current Status:** {get_status_icon(current_status)} {current_status}")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -734,6 +732,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
