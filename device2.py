@@ -669,6 +669,7 @@ def main():
     df = load_data()
 
     menu = st.sidebar.radio(
+        "Menu",
         ["📱 Scanner Mode", "View All", "Search", "Add Device", "Edit Device", "Update Status"]
     )
 
@@ -690,6 +691,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
