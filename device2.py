@@ -437,61 +437,72 @@ def menu_view_all(df: pd.DataFrame):
 # ============================================
 # MENU: SEARCH DEVICE
 # ============================================
-def search_device(search_serial):
+def menu_search(df: pd.DataFrame):
+    st.subheader("🔍 Search Device")
+
+    search_serial = st.text_input("Enter Serial Number", placeholder="Search...")
+
+    if not search_serial:
+        return
+
+    # ไม่มีข้อมูลใน main sheet
+    if df.empty:
+        st.error("❌ No devices in system")
+        return
+
+    # ----- 1) ค้นหาใน main sheet -----
+    result = find_device_by_serial(df, search_serial)
+
+    if result is not None:
+        device, _ = result
+        st.success(f"✅ Found: {search_serial}")
+        display_device_info(device)
+
+        st.write("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(
+                f"**Last Scanned/Added:** {device['Last Scanned/Added'] if device['Last Scanned/Added'] else 'Never'}")
+        with col2:
+            st.write(f"**Scanned/Added By:** {device['Scanned/Added By'] if device['Scanned/Added By'] else '-'}")
+        return
+
+    # ----- 2) ถ้าไม่เจอ → ค้นหาใน destroy_log -----
     client = get_google_sheets_client()
-    spreadsheet = client.open_by_key(SHEET_ID)
 
-    # ---------- ค้นหาใน main sheet ----------
-    ws_main = spreadsheet.worksheet("device_status")
-    main_data = ws_main.get_all_records()
-
-    for row in main_data:
-        if str(row["Serial Number"]).upper() == search_serial.upper():
-            return {
-                "found": True,
-                "location": "main",
-                "serial": row["Serial Number"],
-                "name": row.get("Device Name", ""),
-                "status": row.get("Status", "Unknown"),
-                "time": row.get("Last Scanned", "")
-            }
-
-    # ---------- ถ้าไม่เจอ → ค้นหาใน destroy_log ----------
     try:
+        spreadsheet = client.open_by_key(SHEET_ID)
         ws_destroy = spreadsheet.worksheet("destroy_log")
         destroy_data = ws_destroy.get_all_records()
 
         for row in destroy_data:
             if str(row["Serial Number"]).upper() == search_serial.upper():
-                return {
-                    "found": True,
-                    "location": "destroy",
-                    "serial": row["Serial Number"],
-                    "name": row.get("Device Name", "Unknown"),
-                    "status": "DESTROYED",
-                    "time": row.get("Destroyed At", "")
-                }
-    except:
-        pass
+                st.warning(f"🟥 This device has been DESTROYED")
 
-    # ---------- ไม่เจอเลย ----------
-    return {"found": False}
+                st.write(f"**Serial Number:** {row.get('Serial Number', '-')}")
+                st.write(f"**Device Name:** {row.get('Device Name', '-')}")
+                st.write(f"**Status:** 🟥 DESTROYED")
 
-result = search_device(search_query)
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write(f"**Destroyed At:** {row.get('Destroyed At', '-')}")
+                with col2:
+                    st.write(f"**Destroyed By:** {row.get('By', '-')}")
 
-if result["found"]:
-    st.write(f"**Serial Number:** {result['serial']}")
-    st.write(f"**Device Name:** {result['name']}")
+                return
 
-    if result["location"] == "main":
-        st.write(f"**Status:** {result['status']}")
-        st.write(f"**Last Scanned:** {result['time']}")
-    else:
-        st.write("**Status:** 🟥 DESTROYED")
-        st.write(f"**Destroyed At:** {result['time']}")
+    except Exception as e:
+        st.error(f"⚠ Error reading destroy_log: {e}")
 
-else:
-    st.warning("ไม่พบ Serial Number นี้ในระบบ")
+    # ----- 3) ไม่เจอเลย ทั้ง main และ destroy_log -----
+    st.error(f"❌ Serial Number '{search_serial}' not found")
+
+    # suggestions
+    similar = find_similar_serials(df, search_serial)
+    if not similar.empty:
+        st.info("🔍 Similar Serial Numbers:")
+        st.dataframe(similar[["Serial Number", "Device Name]()]()
+
 # ============================================
 # MENU: ADD DEVICE MANUALLY
 # ============================================
@@ -761,4 +772,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
