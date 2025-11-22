@@ -501,7 +501,7 @@ def menu_search(df: pd.DataFrame):
     similar = find_similar_serials(df, search_serial)
     if not similar.empty:
         st.info("🔍 Similar Serial Numbers:")
-        st.dataframe(similar[["Serial Number", "Device Name]()]()
+        st.dataframe(similar[["Serial Number","Device Name]()]()
 
 # ============================================
 # MENU: ADD DEVICE MANUALLY
@@ -772,5 +772,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
