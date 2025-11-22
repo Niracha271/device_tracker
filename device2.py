@@ -164,7 +164,7 @@ def log_destroy(serial):
         main_ws = spreadsheet.worksheet("device_status")
         main_data = main_ws.get_all_records()
 
-         device_name = "Unknown"
+        device_name = "Unknown"
         for row in main_data:
             if str(row["Serial Number"]).upper() == str(serial).upper():
                 device_name = row.get("Device Name", "Unknown")
@@ -791,6 +791,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
