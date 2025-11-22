@@ -437,40 +437,61 @@ def menu_view_all(df: pd.DataFrame):
 # ============================================
 # MENU: SEARCH DEVICE
 # ============================================
-def menu_search(df: pd.DataFrame):
-    st.subheader("🔍 Search Device")
+def search_device(search_serial):
+    client = get_google_sheets_client()
+    spreadsheet = client.open_by_key(SHEET_ID)
 
-    search_serial = st.text_input("Enter Serial Number", placeholder="Search...")
+    # ---------- ค้นหาใน main sheet ----------
+    ws_main = spreadsheet.worksheet("device_status")
+    main_data = ws_main.get_all_records()
 
-    if not search_serial:
-        return
+    for row in main_data:
+        if str(row["Serial Number"]).upper() == search_serial.upper():
+            return {
+                "found": True,
+                "location": "main",
+                "serial": row["Serial Number"],
+                "name": row.get("Device Name", ""),
+                "status": row.get("Status", "Unknown"),
+                "time": row.get("Last Scanned", "")
+            }
 
-    if df.empty:
-        st.error("❌ No devices in system")
-        return
+    # ---------- ถ้าไม่เจอ → ค้นหาใน destroy_log ----------
+    try:
+        ws_destroy = spreadsheet.worksheet("destroy_log")
+        destroy_data = ws_destroy.get_all_records()
 
-    result = find_device_by_serial(df, search_serial)
+        for row in destroy_data:
+            if str(row["Serial Number"]).upper() == search_serial.upper():
+                return {
+                    "found": True,
+                    "location": "destroy",
+                    "serial": row["Serial Number"],
+                    "name": row.get("Device Name", "Unknown"),
+                    "status": "DESTROYED",
+                    "time": row.get("Destroyed At", "")
+                }
+    except:
+        pass
 
-    if result is None:
-        st.error(f"❌ Serial Number '{search_serial}' not found")
+    # ---------- ไม่เจอเลย ----------
+    return {"found": False}
 
-        similar = find_similar_serials(df, search_serial)
-        if not similar.empty:
-            st.info("🔍 Similar Serial Numbers:")
-            st.dataframe(similar[["Serial Number", "Device Name"]], use_container_width=True, hide_index=True)
+result = search_device(search_query)
+
+if result["found"]:
+    st.write(f"**Serial Number:** {result['serial']}")
+    st.write(f"**Device Name:** {result['name']}")
+
+    if result["location"] == "main":
+        st.write(f"**Status:** {result['status']}")
+        st.write(f"**Last Scanned:** {result['time']}")
     else:
-        device, _ = result
-        st.success(f"✅ Found: {search_serial}")
-        display_device_info(device)
+        st.write("**Status:** 🟥 DESTROYED")
+        st.write(f"**Destroyed At:** {result['time']}")
 
-        st.write("---")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write(
-                f"**Last Scanned/Added:** {device['Last Scanned/Added'] if device['Last Scanned/Added'] else 'Never'}")
-        with col2:
-            st.write(f"**Scanned/Added By:** {device['Scanned/Added By'] if device['Scanned/Added By'] else '-'}")
-
+else:
+    st.warning("ไม่พบ Serial Number นี้ในระบบ")
 # ============================================
 # MENU: ADD DEVICE MANUALLY
 # ============================================
@@ -740,3 +761,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
