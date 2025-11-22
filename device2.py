@@ -146,7 +146,7 @@ def save_data(df: pd.DataFrame) -> bool:
 # DESTROY LOG: store history of destroyed devices
 # ============================================
 def log_destroy(serial):
-    """Save destroyed serial into destroy_log sheet"""
+    """Save destroyed device details into destroy_log sheet"""
     try:
         client = get_google_sheets_client()
         if not client:
@@ -158,15 +158,27 @@ def log_destroy(serial):
         try:
             ws = spreadsheet.worksheet("destroy_log")
         except gspread.exceptions.WorksheetNotFound:
-            ws = spreadsheet.add_worksheet("destroy_log", rows=1000, cols=5)
-            ws.append_row(["Serial Number", "Destroyed At", "By"])
+            ws = spreadsheet.add_worksheet("destroy_log", rows=1000, cols=10)
+            ws.append_row(["Serial Number", "Device Name", "Destroyed At", "By"])
+
+        # อ่าน device name จาก main sheet ก่อนทำลาย
+        main_ws = spreadsheet.worksheet("device_status")
+        main_data = main_ws.get_all_records()
+
+        device_name = "Unknown"
+        for row in main_data:
+            if str(row["Serial Number"]).upper() == str(serial).upper():
+                device_name = row.get("Device Name", "Unknown")
+                break
 
         # บันทึกลง log
         ws.append_row([
             serial,
+            device_name,
             datetime.now(ZoneInfo("Asia/Bangkok")).strftime("%Y-%m-%d %H:%M:%S"),
             st.session_state.get("username", "unknown")
         ])
+
         return True
 
     except Exception as e:
@@ -770,6 +782,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
