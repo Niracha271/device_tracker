@@ -268,6 +268,16 @@ def display_device_info(device: pd.Series):
         status_icon = get_status_icon(device['Status'])
         st.write(f"**Status:** {status_icon} {device['Status']}")
 
+def display_destroy_device_info(device: dict):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.write(f"**Serial:** {device.get('Serial Number','-')}")
+    with col2:
+        st.write(f"**Device:** {device.get('Device Name','-')}")
+    with col3:
+        st.write(f"**Status:** 💥 Destroy")
+
+
 # ============================================
 # BARCODE SCANNER FUNCTIONS
 # ============================================
@@ -491,6 +501,8 @@ def menu_search(df: pd.DataFrame):
             if str(row["Serial Number"]).upper() == search_serial.upper():
 
                 st.warning(f"💥 This device has been DESTROYED")
+
+                display_destroy_device_info(row)
 
                 st.write("---")
                 col1, col2 = st.columns(2)
@@ -782,6 +794,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
