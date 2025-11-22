@@ -497,12 +497,6 @@ def menu_search(df: pd.DataFrame):
     # ----- 3) ไม่เจอเลย ทั้ง main และ destroy_log -----
     st.error(f"❌ Serial Number '{search_serial}' not found")
 
-    # suggestions
-    similar = find_similar_serials(df, search_serial)
-    if not similar.empty:
-        st.info("🔍 Similar Serial Numbers:")
-        st.dataframe(similar[["Serial Number","Device Name]()]()
-
 # ============================================
 # MENU: ADD DEVICE MANUALLY
 # ============================================
@@ -772,6 +766,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
