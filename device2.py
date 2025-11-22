@@ -481,12 +481,14 @@ def menu_search(df: pd.DataFrame):
                 st.warning(f"💥 This device has been DESTROYED")
 
                 st.write("---")
-                col1, col2 = st.columns(2)
+                
+                col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.write(f"**Destroyed At:** {row.get('Destroyed At','-')}")
-                with col2:
-                    st.write(f"**Destroyed By:** {row.get('By','-')}")
-
+                    st.write(f"**Serial:** {device.get('Serial Number','-')}")
+                    with col2:
+                        st.write(f"**Device:** {device.get('Device Name','-')}")
+                        with col3:
+                            st.write(f"**Status:** 💥 Destroy")
                 return
 
     except Exception as e:
@@ -770,6 +772,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
