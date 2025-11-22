@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 # ============================================
 # CONFIGURATION & CONSTANTS
 # ============================================
-SHEET_ID = "1EMuK_cXYR2kk_Gb_i7MIOpnmfhC4Q2c9Uh5dUqpz7cc"  
+SHEET_ID = "1EMuK_cXYR2kk_Gb_i7MIOpnmfhC4Q2c9Uh5dUqpz7cc"
 SHEET_NAME = "devicestatus"
 REQUIRED_COLUMNS = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
 
@@ -26,15 +26,19 @@ class StatusIcon(Enum):
     RETURN = "🔴"
     DESTROY = "💥"
 
-
 # ============================================
 # GOOGLE SHEETS SETUP
 # ============================================
 @st.cache_resource
 def get_google_sheets_client():
     try:
+        # อ่านจาก Streamlit secrets (Streamlit Cloud)
+        creds_dict = st.secrets.get("gsheet_creds")
+        if not creds_dict:
+            raise RuntimeError("gsheet_creds not found in st.secrets")
+
         credentials = Credentials.from_service_account_info(
-            st.secrets["gsheet_creds"],  # ← ใช้จาก Secrets
+            creds_dict,
             scopes=["https://www.googleapis.com/auth/spreadsheets"]
         )
         client = gspread.authorize(credentials)
@@ -44,7 +48,7 @@ def get_google_sheets_client():
         return None
 
 def get_worksheet():
-    """Get the worksheet object"""
+    """Get the worksheet object for main device sheet (create if missing)"""
     try:
         client = get_google_sheets_client()
         if not client:
@@ -55,7 +59,7 @@ def get_worksheet():
         try:
             worksheet = spreadsheet.worksheet(SHEET_NAME)
             return worksheet
-        
+
         except gspread.exceptions.WorksheetNotFound:
             # ถ้า worksheet ยังไม่มี ให้สร้างใหม่
             worksheet = spreadsheet.add_worksheet(title=SHEET_NAME, rows=1000, cols=20)
@@ -139,6 +143,53 @@ def save_data(df: pd.DataFrame) -> bool:
         return False
 
 # ============================================
+# DESTROY LOG: store history of destroyed devices
+# ============================================
+def log_destroy(serial):
+    """Save destroyed serial into destroy_log sheet"""
+    try:
+        client = get_google_sheets_client()
+        if not client:
+            return False
+
+        spreadsheet = client.open_by_key(SHEET_ID)
+
+        # เปิดชีท destroy_log ถ้าไม่มีให้สร้างใหม่พร้อม header
+        try:
+            ws = spreadsheet.worksheet("destroy_log")
+        except gspread.exceptions.WorksheetNotFound:
+            ws = spreadsheet.add_worksheet("destroy_log", rows=1000, cols=5)
+            ws.append_row(["Serial Number", "Destroyed At", "By"])
+
+        # บันทึกลง log
+        ws.append_row([
+            serial,
+            datetime.now(ZoneInfo("Asia/Bangkok")).strftime("%Y-%m-%d %H:%M:%S"),
+            st.session_state.get("username", "unknown")
+        ])
+        return True
+
+    except Exception as e:
+        st.error(f"❌ Failed to log destroy: {e}")
+        return False
+
+def count_destroyed():
+    """Count all logged destroys in destroy_log sheet"""
+    try:
+        client = get_google_sheets_client()
+        if not client:
+            return 0
+        spreadsheet = client.open_by_key(SHEET_ID)
+        try:
+            ws = spreadsheet.worksheet("destroy_log")
+            data = ws.get_all_records()
+            return len(data)
+        except gspread.exceptions.WorksheetNotFound:
+            return 0
+    except Exception:
+        return 0
+
+# ============================================
 # UTILITY FUNCTIONS
 # ============================================
 def get_status_icon(status: str) -> str:
@@ -205,7 +256,6 @@ def display_device_info(device: pd.Series):
         status_icon = get_status_icon(device['Status'])
         st.write(f"**Status:** {status_icon} {device['Status']}")
 
-
 # ============================================
 # BARCODE SCANNER FUNCTIONS
 # ============================================
@@ -230,18 +280,21 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
     result = find_device_by_serial(df, barcode_data)
 
     if result is not None:
-        
         device, idx = result
         current_status = device['Status']
-        
+
+        # ถ้า status ปัจจุบันเป็น Destroy -> log แล้วลบ
         if current_status == DeviceStatus.DESTROY.value:
-            df = df.drop(idx)
+            # log ก่อนลบ
+            log_destroy(barcode_data)
+            df = df.drop(idx).reset_index(drop=True)
             if save_data(df):
                 message = f"💥 Device Destroyed & Removed: {barcode_data}"
                 return True, message, df
             else:
                 return False, "❌ Failed to delete device", df
 
+        # cycle status (Ready <-> Return)
         new_status = cycle_status(current_status)
         df.at[idx, "Status"] = new_status
         df.at[idx, "Last Scanned/Added"] = timestamp
@@ -269,7 +322,6 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
         else:
             return False, f"❌ Failed to save device: {barcode_data}", df
 
-
 # ============================================
 # MENU: BARCODE SCANNER
 # ============================================
@@ -287,7 +339,7 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
         [s.value for s in DeviceStatus],
         index=0, label_visibility="collapsed"
     )
-    
+
     with st.form("scanner_form", clear_on_submit=True):
         st.markdown("**Scan barcode or paste data:**")
         barcode_input = st.text_input(
@@ -314,11 +366,11 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
 
             if success:
                 st.success(message)
-                time.sleep(2)
+                time.sleep(1.2)
                 st.rerun()
             else:
                 st.error(message)
-                time.sleep(2)
+                time.sleep(1.2)
                 st.rerun()
 
     st.divider()
@@ -332,7 +384,7 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
         st.metric("✅ Ready", (df["Status"] == DeviceStatus.READY.value).sum())
     with col4:
         st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
-        
+
     st.subheader("📜 Recently Scanned")
     if not df.empty:
         recent = df.dropna(subset=["Last Scanned/Added"]).sort_values("Last Scanned/Added", ascending=False).head(20)
@@ -358,12 +410,10 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-
 # ============================================
 # MENU: VIEW ALL DEVICES
 # ============================================
 def menu_view_all(df: pd.DataFrame):
-    
     st.subheader("📋 All Devices")
 
     if df.empty:
@@ -381,14 +431,13 @@ def menu_view_all(df: pd.DataFrame):
         with col3:
             st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
         with col4:
-            st.metric("💥 Destroy", (df["Status"] == DeviceStatus.DESTROY.value).sum())
-
+            # show historical destroyed count from log
+            st.metric("💥 Destroyed (Total)", count_destroyed())
 
 # ============================================
 # MENU: SEARCH DEVICE
 # ============================================
 def menu_search(df: pd.DataFrame):
-    
     st.subheader("🔍 Search Device")
 
     search_serial = st.text_input("Enter Serial Number", placeholder="Search...")
@@ -422,12 +471,10 @@ def menu_search(df: pd.DataFrame):
         with col2:
             st.write(f"**Scanned/Added By:** {device['Scanned/Added By'] if device['Scanned/Added By'] else '-'}")
 
-
 # ============================================
 # MENU: ADD DEVICE MANUALLY
 # ============================================
 def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
-    
     st.subheader("➕ Add New Device")
 
     with st.form("add_device_form"):
@@ -450,7 +497,9 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
             if new_status == DeviceStatus.DESTROY.value:
                 st.warning("⚠️ 'Destroy' status will not add device to system")
                 if st.checkbox("Confirm device destruction"):
-                    st.info(f"ℹ️ Device {new_serial} - {new_name} marked for destruction (not added)")
+                    # log destruction even if not added to main sheet
+                    log_destroy(new_serial)
+                    st.info(f"ℹ️ Device {new_serial} - {new_name} marked for destruction (logged)")
                     return df
                 else:
                     st.info("Please confirm destruction")
@@ -472,12 +521,10 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-
 # ============================================
 # MENU: EDIT DEVICE
 # ============================================
 def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
-    
     st.subheader("✏️ Edit Device")
 
     if df.empty:
@@ -510,9 +557,11 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
     with st.form("edit_device_form"):
         new_serial = st.text_input("New Serial Number *", value=device['Serial Number'])
         new_name = st.text_input("New Device Name *", value=device['Device Name'])
-       
-        current_status = device["Status"]
-        st.write(f"**Current Status:** {get_status_icon(current_status)} {current_status}")
+        new_status = st.selectbox(
+            "New Status",
+            [s.value for s in DeviceStatus],
+            index=[s.value for s in DeviceStatus].index(device['Status']) if device['Status'] in [s.value for s in DeviceStatus] else 0
+        )
 
         col1, col2 = st.columns(2)
         with col1:
@@ -537,7 +586,9 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
             if new_status == DeviceStatus.DESTROY.value:
                 st.error("⚠️ Changing to 'Destroy' will delete device from system!")
                 if st.checkbox("Confirm destruction", key="confirm_destroy_edit"):
-                    df = df.drop(idx)
+                    # log destroy then remove from df
+                    log_destroy(edit_serial)
+                    df = df.drop(idx).reset_index(drop=True)
                     if save_data(df):
                         st.success(f"✅ Device destroyed and removed: {edit_serial}")
                         st.balloons()
@@ -556,7 +607,6 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
                 st.rerun()
 
     return df
-
 
 # ============================================
 # MENU: UPDATE STATUS
@@ -605,7 +655,9 @@ def menu_update_status(df: pd.DataFrame) -> pd.DataFrame:
                 st.error("⚠️ Changing to 'Destroy' will delete device from system!")
 
                 if st.checkbox("Confirm destruction", key="confirm_destroy_update"):
-                    df = df[df["Serial Number"].astype(str).str.upper() != update_serial.upper()]
+                    # log destroy then remove
+                    log_destroy(update_serial)
+                    df = df[df["Serial Number"].astype(str).str.upper() != update_serial.upper()].reset_index(drop=True)
                     if save_data(df):
                         st.success(f"✅ Device destroyed and removed: {update_serial}")
                         st.rerun()
@@ -621,7 +673,6 @@ def menu_update_status(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-
 # ============================================
 # SIDEBAR STATISTICS
 # ============================================
@@ -633,13 +684,12 @@ def display_sidebar_stats(df: pd.DataFrame):
         st.sidebar.metric("Total Devices", len(df))
         st.sidebar.metric("✅ Ready", (df["Status"] == DeviceStatus.READY.value).sum())
         st.sidebar.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
-        st.sidebar.metric("💥 Destroy", (df["Status"] == DeviceStatus.DESTROY.value).sum())
+        st.sidebar.metric("💥 Destroyed (Total)", count_destroyed())
     else:
         st.sidebar.write("📭 No data in system")
 
     st.sidebar.markdown("---")
     st.sidebar.write(f"**Scans Today:** {st.session_state.scan_count}")
-
 
 # ============================================
 # MAIN APPLICATION
@@ -688,12 +738,5 @@ def main():
 
     display_sidebar_stats(df)
 
-
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
