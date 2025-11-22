@@ -161,6 +161,15 @@ def log_destroy(serial):
             ws = spreadsheet.add_worksheet("destroy_log", rows=1000, cols=5)
             ws.append_row(["Serial Number","Device Name", "Destroyed At", "By"])
 
+        main_ws = spreadsheet.worksheet("device_status")
+        main_data = main_ws.get_all_records()
+
+         device_name = "Unknown"
+        for row in main_data:
+            if str(row["Serial Number"]).upper() == str(serial).upper():
+                device_name = row.get("Device Name", "Unknown")
+                break
+                
         # บันทึกลง log
         ws.append_row([
             serial,
@@ -782,6 +791,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
