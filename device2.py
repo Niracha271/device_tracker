@@ -471,13 +471,13 @@ def menu_search(df: pd.DataFrame):
         display_device_info(device)
 
         st.write("---")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write(f"**Destroyed At:** {row.get('Destroyed At','-')}")
-                with col2:
-                    st.write(f"**Destroyed By:** {row.get('By','-')}")
-
-                return
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(
+                f"**Last Scanned/Added:** {device['Last Scanned/Added'] if device['Last Scanned/Added'] else 'Never'}")
+        with col2:
+            st.write(f"**Scanned/Added By:** {device['Scanned/Added By'] if device['Scanned/Added By'] else '-'}")
+        return
 
     # ----- 2) ถ้าไม่เจอ → ค้นหาใน destroy_log -----
     client = get_google_sheets_client()
@@ -493,12 +493,12 @@ def menu_search(df: pd.DataFrame):
                 st.warning(f"💥 This device has been DESTROYED")
 
                 st.write("---")
-                
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.write(f"**Serial:** {device.get('Serial Number','-')}")
+                    st.write(f"**Destroyed At:** {row.get('Destroyed At','-')}")
                 with col2:
-                    st.write(f"**Device:** {device.get('Device Name','-')}")
+                    st.write(f"**Destroyed By:** {row.get('By','-')}")
+
                 return
 
     except Exception as e:
@@ -782,6 +782,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
