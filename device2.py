@@ -468,6 +468,15 @@ def menu_search(df: pd.DataFrame):
         return
 
     # ----- 2) ถ้าไม่เจอ → ค้นหาใน destroy_log -----
+def display_destroy_device_info(device: dict):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.write(f"**Serial:** {device.get('Serial Number','-')}")
+    with col2:
+        st.write(f"**Device:** {device.get('Device Name','-')}")
+    with col3:
+        st.write(f"**Status:** 💥 Destroy")
+   
     client = get_google_sheets_client()
 
     try:
@@ -480,14 +489,6 @@ def menu_search(df: pd.DataFrame):
 
                 st.warning(f"💥 This device has been DESTROYED")
                 
-def display_destroy_device_info(device: dict):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.write(f"**Serial:** {device.get('Serial Number','-')}")
-    with col2:
-        st.write(f"**Device:** {device.get('Device Name','-')}")
-    with col3:
-        st.write(f"**Status:** 💥 Destroy")
                 # UI เหมือน device ปกติ
                 display_destroy_device_info(row)
 
@@ -781,6 +782,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
