@@ -89,7 +89,7 @@ init_session_state()
 # ============================================
 # DATA MANAGEMENT (Google Sheets)
 # ============================================
-@st.cache_data(ttl=100)
+@st.cache_data(ttl=1000)
 def load_data():
     """Load data from Google Sheets with caching"""
     worksheet = get_worksheet()
@@ -782,6 +782,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
