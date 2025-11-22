@@ -477,25 +477,32 @@ def menu_search(df: pd.DataFrame):
 
         for row in destroy_data:
             if str(row["Serial Number"]).upper() == search_serial.upper():
+
                 st.warning(f"🟥 This device has been DESTROYED")
 
-                st.write(f"**Serial Number:** {row.get('Serial Number', '-')}")
-                st.write(f"**Device Name:** {row.get('Device Name', '-')}")
-                st.write(f"**Status:** 🟥 DESTROYED")
+                # UI เหมือน device ปกติ
+                display_destroy_device_info(row)
 
+                st.write("---")
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.write(f"**Destroyed At:** {row.get('Destroyed At', '-')}")
+                    st.write(f"**Destroyed At:** {row.get('Destroyed At','-')}")
                 with col2:
-                    st.write(f"**Destroyed By:** {row.get('By', '-')}")
+                    st.write(f"**Destroyed By:** {row.get('By','-')}")
 
                 return
 
     except Exception as e:
         st.error(f"⚠ Error reading destroy_log: {e}")
 
-    # ----- 3) ไม่เจอเลย ทั้ง main และ destroy_log -----
+    # ----- 3) ไม่เจอทั้ง main และ destroy -----
     st.error(f"❌ Serial Number '{search_serial}' not found")
+
+    similar = find_similar_serials(df, search_serial)
+    if not similar.empty:
+        st.info("🔍 Similar Serial Numbers:")
+        st.dataframe(similar[["Serial Number", "Device Name"]],
+                     use_container_width=True, hide_index=True)
 
 # ============================================
 # MENU: ADD DEVICE MANUALLY
@@ -766,6 +773,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
