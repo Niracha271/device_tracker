@@ -612,8 +612,8 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
         new_name = st.text_input("New Device Name *", value=device['Device Name'])
         new_status = st.selectbox(
             "New Status",
-            [s.value for s in DeviceStatus],
-            index=[s.value for s in DeviceStatus].index(device['Status']) if device['Status'] in [s.value for s in DeviceStatus] else 0
+            [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY],
+            index=[s.value for s in DeviceStatus if s != DeviceStatus.DESTROY].index(device['Status']) if device['Status'] in [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY] else 0
         )
 
         col1, col2 = st.columns(2)
@@ -793,6 +793,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
