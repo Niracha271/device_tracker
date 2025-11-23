@@ -287,8 +287,6 @@ def cycle_status(current_status: str) -> str:
         return DeviceStatus.RETURN.value
     elif current_status == DeviceStatus.RETURN.value:
         return DeviceStatus.READY.value
-    else:  # DESTROY
-        return DeviceStatus.DESTROY.value
 
 
 def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: str = "Ready") -> Tuple[
@@ -795,6 +793,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
