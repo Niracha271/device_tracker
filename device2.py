@@ -474,7 +474,7 @@ def menu_view_all(df: pd.DataFrame):
         with col3:
             st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
         with col4:
-            st.metric("💥 Destroy", (df["Status"] == DeviceStatus.DESTROY.value).sum())
+            st.metric("💥 Destroyed (Total)", count_destroyed())
 
 # ============================================
 # MENU: SEARCH DEVICE
@@ -814,6 +814,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
