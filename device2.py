@@ -411,24 +411,27 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
         recent = df.dropna(subset=["Last Scanned/Added"]).sort_values("Last Scanned/Added", ascending=False).head(20)
         if not recent.empty:
             display_cols = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
-            st.dataframe(recent[display_cols], use_container_width=True, hide_index=True)
+            def highlight_status(status):
+                if status == DeviceStatus.READY.value:
+                    return 'background-color: #90EE90; color: #006400; font-weight: bold;'
+                elif status == DeviceStatus.RETURN.value:
+                    return 'background-color: #ADD8E6; color: #000080; font-weight: bold;'
+                elif status == DeviceStatus.DESTROY.value:
+                    return 'background-color: #FFB6C1; color: #8B0000; font-weight: bold;'
+                else:
+                    return ''
+            
+            styled_recent = recent[display_cols].style.applymap(
+                lambda x: highlight_status(x) if x in [s.value for s in DeviceStatus] else '', 
+                subset=['Status']
+            )
+            
+            st.dataframe(styled_recent, use_container_width=True, hide_index=True)
         else:
             st.info("📭 No scans yet")
     else:
         st.info("📭 No devices")
-
-        st.components.v1.html("""
-            <script>
-                setTimeout(() => {
-                    const input = document.querySelector('input[placeholder*="Tap scanner here"]');
-                    if (input) {
-                        input.focus();
-                        input.select();
-                    }
-                }, 800);
-            </script>
-            """, height=0)
-
+    
     return df
 
 # ============================================
@@ -793,6 +796,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
