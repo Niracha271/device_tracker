@@ -474,7 +474,7 @@ def menu_view_all(df: pd.DataFrame):
         with col3:
             st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
         with col4:
-            st.metric("💥 Destroyed (Total)", count_destroyed())
+            st.metric("💥 Destroyed", count_destroyed())
 
 # ============================================
 # MENU: SEARCH DEVICE
@@ -758,7 +758,7 @@ def display_sidebar_stats(df: pd.DataFrame):
         st.sidebar.metric("Total Devices", len(df))
         st.sidebar.metric("✅ Ready", (df["Status"] == DeviceStatus.READY.value).sum())
         st.sidebar.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
-        st.sidebar.metric("💥 Destroyed (Total)", count_destroyed())
+        st.sidebar.metric("💥 Destroyed", count_destroyed())
     else:
         st.sidebar.write("📭 No data in system")
 
@@ -814,6 +814,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
