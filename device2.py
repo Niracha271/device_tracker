@@ -468,13 +468,13 @@ def menu_view_all(df: pd.DataFrame):
         # Statistics
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("🔧 Total", stats["total"])
+            st.metric("🔧 Total", len(df))
         with col2:
-            st.metric("✅ Ready", stats["ready"])
+            st.metric("✅ Ready", (df["Status"] == DeviceStatus.READY.value).sum())
         with col3:
-            st.metric("🔄 Return", stats["return"])
+            st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
         with col4:
-            st.metric("💥 Destroy", stats["destroy"])
+            st.metric("💥 Destroy", (df["Status"] == DeviceStatus.DESTROY.value).sum())
 
 # ============================================
 # MENU: SEARCH DEVICE
@@ -814,6 +814,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
