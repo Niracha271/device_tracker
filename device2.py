@@ -357,7 +357,7 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
     st.divider()
     default_status = st.selectbox(
         "Default Status for New Devices",
-        [s.value for s in DeviceStatus],
+        [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY],
         index=0, label_visibility="collapsed"
     )
 
@@ -793,6 +793,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
