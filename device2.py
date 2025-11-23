@@ -444,7 +444,298 @@ def menu_view_all(df: pd.DataFrame):
         st.info("📭 No device data. Please add a new device or use barcode scanner.")
     else:
         display_cols = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
-        st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
+        def highlight_status(status):
+            if status == DeviceStatus.READY.value:
+                return 'background-color: #90EE90; color: #006400; font-weight: bold;'  # เขียวอ่อน + เขียวเข้ม
+            elif status == DeviceStatus.RETURN.value:
+                return 'background-color: #ADD8E6; color: #000080; font-weight: bold;'  # น้ำเงินอ่อน + น้ำเงินเข้ม
+            elif status == DeviceStatus.DESTROY.value:
+                return 'background-color: #FFB6C1; color: #8B0000; font-weight: bold;'  # ชมพูอ่อน + แดงเข้ม
+            else:
+                return ''
+        
+        # Apply styling
+        styled_df = df[display_cols].style.applymap(
+            lambda x: highlight_status(x) if x in [s.value for s in DeviceStatus] else '', 
+            subset=['Status']
+        )
+        
+        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+        # Statistics
+        stats = get_device_stats(df)
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("🔧 Total", stats["total"])
+        with col2:
+            st.metric("✅ Ready", stats["ready"])
+        with col3:
+            st.metric("🔄 Return", stats["return"])
+        with col4:
+            st.metric("💥 Destroy", stats["destroy"])
+        with col5:
+            st.metric("📱 Active", stats["active"])
+วิธีที่ 2: ใช้ CSS Custom Styling
+python
+def menu_view_all(df: pd.DataFrame):
+    """Display all devices"""
+    st.subheader("📋 All Devices")
+
+    if df.empty:
+        st.info("📭 No device data. Please add a new device or use barcode scanner.")
+    else:
+        # เพิ่ม CSS สำหรับ styling
+        st.markdown("""
+        <style>
+        .status-ready {
+            background-color: #90EE90 !important;
+            color: #006400 !important;
+            font-weight: bold !important;
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+        .status-return {
+            background-color: #ADD8E6 !important;
+            color: #000080 !important;
+            font-weight: bold !important;
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+        .status-destroy {
+            background-color: #FFB6C1 !important;
+            color: #8B0000 !important;
+            font-weight: bold !important;
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # สร้าง DataFrame ที่มี HTML formatting
+        display_df = df.copy()
+        display_cols = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
+        
+        # แปลง Status เป็น HTML
+        def format_status(status):
+            if status == DeviceStatus.READY.value:
+                return f'<span class="status-ready">{status}</span>'
+            elif status == DeviceStatus.RETURN.value:
+                return f'<span class="status-return">{status}</span>'
+            elif status == DeviceStatus.DESTROY.value:
+                return f'<span class="status-destroy">{status}</span>'
+            else:
+                return status
+        
+        display_df['Status'] = display_df['Status'].apply(format_status)
+        
+        # แสดง DataFrame ด้วย HTML
+        st.write(display_df[display_cols].to_html(escape=False, index=False), unsafe_allow_html=True)
+
+        # Statistics
+        stats = get_device_stats(df)
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("🔧 Total", stats["total"])
+        with col2:
+            st.metric("✅ Ready", stats["ready"])
+        with col3:
+            st.metric("🔄 Return", stats["return"])
+        with col4:
+            st.metric("💥 Destroy", stats["destroy"])
+        with col5:
+            st.metric("📱 Active", stats["active"])
+วิธีที่ 3: ใช้ Styler แบบละเอียดมากขึ้น
+python
+def menu_view_all(df: pd.DataFrame):
+    """Display all devices"""
+    st.subheader("📋 All Devices")
+
+    if df.empty:
+        st.info("📭 No device data. Please add a new device or use barcode scanner.")
+    else:
+        display_cols = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
+        
+        # สร้าง function สำหรับกำหนดสี
+        def highlight_status(status):
+            if status == DeviceStatus.READY.value:
+                return [
+                    'background-color: #E8F5E8;',  # Header
+                    'background-color: #90EE90; color: #006400; font-weight: bold;'  # Cells
+                ]
+            elif status == DeviceStatus.RETURN.value:
+                return [
+                    'background-color: #E6F3FF;',  # Header
+                    'background-color: #ADD8E6; color: #000080; font-weight: bold;'  # Cells
+                ]
+            elif status == DeviceStatus.DESTROY.value:
+                return [
+                    'background-color: #FFE6E6;',  # Header
+                    'background-color: #FFB6C1; color: #8B0000; font-weight: bold;'  # Cells
+                ]
+            else:
+                return ['', '']
+        
+        # Apply styling
+        styled_df = df[display_cols].style.apply(
+            lambda x: [highlight_status(x['Status'])[1] if x.name == 'Status' else '' for x in x], 
+            axis=0
+        ).set_table_styles([
+            {'selector': 'th', 'props': [('background-color', '#f0f2f6'), ('font-weight', 'bold')]},
+            {'selector': '.col_heading', 'props': [('text-align', 'center')]},
+        ], overwrite=False)
+        
+        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+        # Statistics
+        stats = get_device_stats(df)
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("🔧 Total", stats["total"])
+        with col2:
+            st.metric("✅ Ready", stats["ready"])
+        with col3:
+            st.metric("🔄 Return", stats["return"])
+        with col4:
+            st.metric("💥 Destroy", stats["destroy"])
+        with col5:
+            st.metric("📱 Active", stats["active"])
+วิธีที่ 4: แก้ไขฟังก์ชัน get_device_stats ให้ return สีด้วย
+python
+def get_device_stats(df: pd.DataFrame) -> dict:
+    """Calculate device statistics with colors"""
+    if df.empty:
+        return {
+            "total": 0,
+            "ready": 0,
+            "return": 0,
+            "destroy": 0,
+            "active": 0,
+            "colors": {
+                "ready": "#90EE90",
+                "return": "#ADD8E6", 
+                "destroy": "#FFB6C1"
+            }
+        }
+    
+    total = len(df)
+    ready = (df["Status"] == DeviceStatus.READY.value).sum()
+    return_count = (df["Status"] == DeviceStatus.RETURN.value).sum()
+    destroy = (df["Status"] == DeviceStatus.DESTROY.value).sum()
+    active = total - destroy
+    
+    return {
+        "total": total,
+        "ready": ready,
+        "return": return_count,
+        "destroy": destroy,
+        "active": active,
+        "colors": {
+            "ready": "#90EE90",
+            "return": "#ADD8E6",
+            "destroy": "#FFB6C1"
+        }
+    }
+แนะนำให้ใช้วิธีที่ 1 (Pandas Styler) เพราะ:
+
+ใช้ง่ายและทำงานได้ดีกับ Streamlit
+
+ไม่ต้องใช้ HTML/CSS ซับซ้อน
+
+Performance ดี
+
+ลองรันดูนะครับ! ตอนนี้ dashboard จะมีสีสันมากขึ้น:
+
+✅ Ready = สีเขียวอ่อน
+
+🔄 Return = สีน้ำเงินอ่อน
+
+💥 Destroy = สีชมพูอ่อน
+
+dashboard view all กับ recently scanned อันเดียวกันปะ
+ไม่ใช่อันเดียวกันครับ! ทั้งสองส่วนแสดงข้อมูลคนละแบบ:
+
+📋 View All (เมนู View All)
+แสดงอุปกรณ์ทั้งหมด ในระบบ
+
+เรียงตามลำดับใน database
+
+แสดงทุกอุปกรณ์ไม่ว่าจะมีการ scan ล่าสุดหรือไม่
+
+📜 Recently Scanned (ใน Scanner Mode)
+แสดงเฉพาะอุปกรณ์ที่ถูก scan ล่าสุด
+
+เรียงจากใหม่ไปเก่า (ตามคอลัมน์ "Last Scanned/Added")
+
+แสดงแค่ 20 อันดับล่าสุด เท่านั้น
+
+ไม่แสดงอุปกรณ์ที่ยังไม่เคยถูก scan
+
+ลองดูโค้ดส่วน Recently Scanned:
+
+python
+# Recent scanned devices
+st.subheader("📜 Recently Scanned")
+if not df.empty:
+    recent = df.dropna(subset=["Last Scanned/Added"]).sort_values("Last Scanned/Added", ascending=False).head(20)
+    if not recent.empty:
+        display_cols = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
+        st.dataframe(recent[display_cols], use_container_width=True, hide_index=True)
+    else:
+        st.info("📭 No scans yet")
+else:
+    st.info("📭 No devices")
+ตัวอย่างการทำงาน:
+ถ้ามีอุปกรณ์ 100 ชิ้นในระบบ:
+
+🏠 View All = แสดงทั้งหมด 100 ชิ้น
+
+📱 Recently Scanned = แสดงแค่ 20 ชิ้นล่าสุดที่ถูก scan
+
+ถ้ามีการ scan อุปกรณ์ใหม่:
+
+อุปกรณ์ที่ถูก scan จะโผล่ขึ้นมาอันดับแรกใน Recently Scanned
+
+ใน View All อุปกรณ์นั้นอาจอยู่ตรงกลางหรือท้ายๆ ก็ได้
+
+ถ้าต้องการให้ Recently Scanned มีสีเหมือน View All
+แก้ไขโค้ดใน menu_barcode_scanner:
+
+python
+def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
+    """Barcode Scanner Mode with auto-focus"""
+    
+    # ... (โค้ดส่วนอื่นๆ) ...
+    
+    # Recent scanned devices
+    st.subheader("📜 Recently Scanned")
+    if not df.empty:
+        recent = df.dropna(subset=["Last Scanned/Added"]).sort_values("Last Scanned/Added", ascending=False).head(20)
+        if not recent.empty:
+            display_cols = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
+            
+            # เพิ่ม highlight สีให้ Recently Scanned
+            def highlight_status(status):
+                if status == DeviceStatus.READY.value:
+                    return 'background-color: #90EE90; color: #006400; font-weight: bold;'
+                elif status == DeviceStatus.RETURN.value:
+                    return 'background-color: #ADD8E6; color: #000080; font-weight: bold;'
+                elif status == DeviceStatus.DESTROY.value:
+                    return 'background-color: #FFB6C1; color: #8B0000; font-weight: bold;'
+                else:
+                    return ''
+            
+            styled_recent = recent[display_cols].style.applymap(
+                lambda x: highlight_status(x) if x in [s.value for s in DeviceStatus] else '', 
+                subset=['Status']
+            )
+            
+            st.dataframe(styled_recent, use_container_width=True, hide_index=True)
+        else:
+            st.info("📭 No scans yet")
+    else:
+        st.info("📭 No devices")
+    
+    return df
 
         # Statistics
         col1, col2, col3, col4 = st.columns(4)
@@ -456,7 +747,7 @@ def menu_view_all(df: pd.DataFrame):
             st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
         with col4:
             # show historical destroyed count from log
-            st.metric("💥 Destroyed (Total)", count_destroyed())
+            st.metric("💥 Destroyed", count_destroyed())
 
 # ============================================
 # MENU: SEARCH DEVICE
@@ -796,6 +1087,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
