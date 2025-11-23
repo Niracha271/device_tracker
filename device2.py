@@ -466,7 +466,6 @@ def menu_view_all(df: pd.DataFrame):
         st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
         # Statistics
-        stats = get_device_stats(df)
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("🔧 Total", stats["total"])
@@ -815,6 +814,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
