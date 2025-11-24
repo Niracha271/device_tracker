@@ -351,8 +351,7 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
         st.session_state.username = st.text_input("User",value=st.session_state.username,label_visibility="collapsed",key="user_field")
 
     st.divider()
-    default_status = st.selectbox(
-        [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY],
+    default_status = st.selectbox([s.value for s in DeviceStatus if s != DeviceStatus.DESTROY],
         index=0, label_visibility="collapsed"
     )
 
@@ -780,6 +779,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
