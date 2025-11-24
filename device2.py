@@ -545,6 +545,13 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
         new_name = st.text_input("Device Name *", placeholder="Enter Device Name")
         new_status = st.selectbox("Status *", [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY])
 
+        st.session_state.username = st.text_input(
+            "User Name",
+            value=st.session_state.username,
+            placeholder="Enter your name...",
+            key="added_user_field"
+        )
+        
         submitted = st.form_submit_button("Save", use_container_width=True)
 
         if submitted:
@@ -795,6 +802,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
