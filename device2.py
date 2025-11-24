@@ -352,7 +352,7 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
 
     st.divider()
     default_status = st.selectbox([s.value for s in DeviceStatus if s != DeviceStatus.DESTROY],
-        index=0, label_visibility="collapsed"
+        index=0
     )
 
     with st.form("scanner_form", clear_on_submit=True):
@@ -541,7 +541,7 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
     with st.form("add_device_form"):
         new_serial = st.text_input("Serial Number *", placeholder="Enter Serial Number")
         new_name = st.text_input("Device Name *", placeholder="Enter Device Name")
-        new_status = st.selectbox("Status *", [s.value for s in DeviceStatus])
+        new_status = st.selectbox("Status *", [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY])
 
         submitted = st.form_submit_button("Save", use_container_width=True)
 
@@ -779,6 +779,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
