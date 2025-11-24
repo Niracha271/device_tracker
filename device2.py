@@ -435,7 +435,6 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
 # MENU: VIEW ALL DEVICES
 # ============================================
 def menu_view_all(df: pd.DataFrame):
-    """Display all devices"""
     st.subheader("📋 All Devices")
 
     if df.empty:
@@ -443,18 +442,15 @@ def menu_view_all(df: pd.DataFrame):
     else:
         display_cols = ["Serial Number", "Device Name", "Status", "Last Scanned/Added", "Scanned/Added By"]
         
-        # สร้าง function สำหรับกำหนดสี
         def highlight_status(status):
             if status == DeviceStatus.READY.value:
-                return 'background-color: #90EE90; color: #006400; font-weight: bold;'  # เขียวอ่อน + เขียวเข้ม
+                return 'background-color: #90EE90; color: #006400; font-weight: bold;'  
             elif status == DeviceStatus.RETURN.value:
-                return 'background-color: #ADD8E6; color: #000080; font-weight: bold;'  # น้ำเงินอ่อน + น้ำเงินเข้ม
-            elif status == DeviceStatus.DESTROY.value:
-                return 'background-color: #FFB6C1; color: #8B0000; font-weight: bold;'  # ชมพูอ่อน + แดงเข้ม
+                return 'background-color: #ADD8E6; color: #000080; font-weight: bold;'  
             else:
                 return ''
-        
-        # Apply styling
+
+    
         styled_df = df[display_cols].style.applymap(
             lambda x: highlight_status(x) if x in [s.value for s in DeviceStatus] else '', 
             subset=['Status']
@@ -471,7 +467,7 @@ def menu_view_all(df: pd.DataFrame):
         with col3:
             st.metric("🔄 Return", (df["Status"] == DeviceStatus.RETURN.value).sum())
         with col4:
-            st.metric("💥 Destroyed", count_destroyed())
+            st.metric("💥 Destroy", count_destroyed())
 
 # ============================================
 # MENU: SEARCH DEVICE
@@ -811,6 +807,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
