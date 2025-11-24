@@ -635,18 +635,6 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
                 st.warning("⚠️ New Serial Number already exists")
                 return df
 
-            if new_status == DeviceStatus.DESTROY.value:
-                st.error("⚠️ Changing to 'Destroy' will delete device from system!")
-                if st.checkbox("Confirm destruction", key="confirm_destroy_edit"):
-                    # log destroy then remove from df
-                    log_destroy(edit_serial)
-                    df = df.drop(idx).reset_index(drop=True)
-                    if save_data(df):
-                        st.success(f"✅ Device destroyed and removed: {edit_serial}")
-                        st.balloons()
-                        st.rerun()
-                return df
-
             df.at[idx, 'Serial Number'] = new_serial.strip()
             df.at[idx, 'Device Name'] = new_name.strip()
             df.at[idx, 'Status'] = new_status
@@ -792,6 +780,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
