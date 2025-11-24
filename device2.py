@@ -661,16 +661,6 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================
 def menu_update_status(df: pd.DataFrame) -> pd.DataFrame:
     st.subheader("🔄 Update Device Status")
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.write("**Update Device Status**")
-    with col2:
-        st.session_state.username = st.text_input(
-            "User",
-            value=st.session_state.username,
-            label_visibility="collapsed",
-            key="update_user_field"
-        )
 
     if df.empty:
         st.info("📭 No devices available.")
@@ -700,6 +690,13 @@ def menu_update_status(df: pd.DataFrame) -> pd.DataFrame:
         new_status = st.selectbox(
             "Select New Status",
             [s.value for s in DeviceStatus]
+        )
+        
+        st.session_state.username = st.text_input(
+            "User Name",
+            value=st.session_state.username,
+            placeholder="Enter your name...",
+            key="update_user_field"
         )
 
         submitted = st.form_submit_button("Update Status", use_container_width=True)
@@ -798,6 +795,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
