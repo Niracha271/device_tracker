@@ -579,16 +579,6 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================
 def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
     st.subheader("✏️ Edit Device")
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.write("**Edit Device Information**")
-    with col2:
-        st.session_state.username = st.text_input(
-            "User",
-            value=st.session_state.username,
-            label_visibility="collapsed",
-            key="edit_user_field"
-        )
 
     if df.empty:
         st.info("📭 No devices available. Please add a device first.")
@@ -626,6 +616,13 @@ def menu_edit_device(df: pd.DataFrame) -> pd.DataFrame:
             index=[s.value for s in DeviceStatus if s != DeviceStatus.DESTROY].index(device['Status']) if device['Status'] in [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY] else 0
         )
 
+        st.session_state.username = st.text_input(
+            "User Name",
+            value=st.session_state.username,
+            placeholder="Enter your name...",
+            key="edit_user_field"
+        )
+        
         col1, col2 = st.columns(2)
         with col1:
             save_btn = st.form_submit_button("💾 Save Changes", use_container_width=True)
@@ -801,6 +798,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
