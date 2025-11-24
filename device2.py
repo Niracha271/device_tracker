@@ -216,7 +216,6 @@ def get_status_icon(status: str) -> str:
 
 
 def find_device_by_serial(df: pd.DataFrame, serial: str) -> Optional[Tuple[pd.Series, int]]:
-    """Find device by serial number (case-insensitive)"""
     if df.empty or not serial.strip():
         return None
 
@@ -229,7 +228,6 @@ def find_device_by_serial(df: pd.DataFrame, serial: str) -> Optional[Tuple[pd.Se
 
 
 def find_similar_serials(df: pd.DataFrame, search_term: str) -> pd.DataFrame:
-    """Find similar serial numbers"""
     if df.empty or not search_term.strip():
         return pd.DataFrame()
 
@@ -259,7 +257,6 @@ def check_duplicate_serial(df: pd.DataFrame, serial: str, exclude_idx: Optional[
 
 
 def display_device_info(device: pd.Series):
-    """Display device information in formatted columns"""
     col1, col2, col3 = st.columns(3)
     with col1:
         st.write(f"**Serial:** {device['Serial Number']}")
@@ -355,7 +352,6 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
 
     st.divider()
     default_status = st.selectbox(
-        "Default Status for New Devices",
         [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY],
         index=0, label_visibility="collapsed"
     )
@@ -480,7 +476,6 @@ def menu_search(df: pd.DataFrame):
     if not search_serial:
         return
 
-    # ไม่มีข้อมูลใน main sheet
     if df.empty:
         st.error("❌ No devices in system")
         return
@@ -547,7 +542,7 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
     with st.form("add_device_form"):
         new_serial = st.text_input("Serial Number *", placeholder="Enter Serial Number")
         new_name = st.text_input("Device Name *", placeholder="Enter Device Name")
-        new_status = st.selectbox("Status *", [s.value for s in DeviceStatus])
+        new_status = st.selectbox("Status *", [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY])
 
         submitted = st.form_submit_button("Save", use_container_width=True)
 
@@ -561,16 +556,6 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
                 st.warning("⚠️ Serial Number already exists in system")
                 return df
 
-            if new_status == DeviceStatus.DESTROY.value:
-                st.warning("⚠️ 'Destroy' status will not add device to system")
-                if st.checkbox("Confirm device destruction"):
-                    # log destruction even if not added to main sheet
-                    log_destroy(new_serial)
-                    st.info(f"ℹ️ Device {new_serial} - {new_name} marked for destruction (logged)")
-                    return df
-                else:
-                    st.info("Please confirm destruction")
-                    return df
 
             timestamp = datetime.now(ZoneInfo("Asia/Bangkok")).strftime("%Y-%m-%d %H:%M:%S")
             new_row = pd.DataFrame({
@@ -807,6 +792,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
