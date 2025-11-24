@@ -304,9 +304,8 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
         device, idx = result
         current_status = device['Status']
 
-        # ถ้า status ปัจจุบันเป็น Destroy -> log แล้วลบ
+        # เงื่อนไข
         if current_status == DeviceStatus.DESTROY.value:
-            # log ก่อนลบ
             log_destroy(barcode_data)
             df = df.drop(idx).reset_index(drop=True)
             if save_data(df):
@@ -347,7 +346,7 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
 # MENU: BARCODE SCANNER
 # ============================================
 def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
-    st.set_page_config(page_title="Medical Device Tracker", layout="wide")
+    st.set_page_config(page_title="APD Device Tracker", layout="wide")
     col1, col2 = st.columns([3, 1])
     with col1:
         st.info("**🔴 LIVE SCANNER MODE** - Auto-save on scan")
