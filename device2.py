@@ -415,8 +415,6 @@ def menu_barcode_scanner(df: pd.DataFrame) -> pd.DataFrame:
                     return 'background-color: #90EE90; color: #006400; font-weight: bold;'
                 elif status == DeviceStatus.RETURN.value:
                     return 'background-color: #ADD8E6; color: #000080; font-weight: bold;'
-                elif status == DeviceStatus.DESTROY.value:
-                    return 'background-color: #FFB6C1; color: #8B0000; font-weight: bold;'
                 else:
                     return ''
             
@@ -813,6 +811,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
