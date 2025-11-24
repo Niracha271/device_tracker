@@ -542,7 +542,7 @@ def menu_add_device(df: pd.DataFrame) -> pd.DataFrame:
     with st.form("add_device_form"):
         new_serial = st.text_input("Serial Number *", placeholder="Enter Serial Number")
         new_name = st.text_input("Device Name *", placeholder="Enter Device Name")
-        new_status = st.selectbox("Status *", [s.value for s in DeviceStatus if s != DeviceStatus.DESTROY])
+        new_status = st.selectbox("Status *", [s.value for s in DeviceStatus])
 
         submitted = st.form_submit_button("Save", use_container_width=True)
 
@@ -780,6 +780,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
