@@ -286,8 +286,7 @@ def cycle_status(current_status: str) -> str:
         return DeviceStatus.READY.value
 
 
-def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: str = "Ready") -> Tuple[
-    bool, str, pd.DataFrame]:
+def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: str = "Ready") -> Tuple[bool, str, pd.DataFrame]:
     barcode_data = barcode_data.strip()
 
     if not barcode_data:
@@ -300,18 +299,8 @@ def process_barcode_scan(barcode_data: str, df: pd.DataFrame, default_status: st
     if result is not None:
         device, idx = result
         current_status = device['Status']
-
-        # เงื่อนไข
-        if current_status == DeviceStatus.DESTROY.value:
-            log_destroy(barcode_data)
-            df = df.drop(idx).reset_index(drop=True)
-            if save_data(df):
-                message = f"💥 Device Destroyed & Removed: {barcode_data}"
-                return True, message, df
-            else:
-                return False, "❌ Failed to delete device", df
-
-        # cycle status (Ready <-> Return)
+        
+        # Cycle to next status
         new_status = cycle_status(current_status)
         df.at[idx, "Status"] = new_status
         df.at[idx, "Last Scanned/Added"] = timestamp
@@ -802,6 +791,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
